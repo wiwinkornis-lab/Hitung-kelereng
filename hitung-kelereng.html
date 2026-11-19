@@ -29,15 +29,17 @@ p{font-size:13px;color:var(--mut)}
 <input type="range" id="th" min="8" max="80" value="25">
 <label>Tebal garis hitung: <span id="bv">4</span></label>
 <input type="range" id="bd" min="1" max="12" value="4">
+<label>Jeda antar benda (ms): <span id="jv">300</span></label>
+<input type="range" id="jd" min="50" max="1000" step="50" value="300">
 <p>Ketuk atau geser di layar kamera untuk memindahkan garis. Setiap kelereng yang lewat garis dihitung 1. Pakai latar polos dan cahaya terang.</p>
 <script>
 const v=document.getElementById('v'),c=document.getElementById('c'),x=c.getContext('2d');
 const N=document.getElementById('n'),W=240,H=180;
 const off=document.createElement('canvas');off.width=W;off.height=H;
 const o=off.getContext('2d',{willReadFrequently:true});
-let lineY=0.5,count=0,prev=null,prevRuns=[],active=false;
-const th=document.getElementById('th'),bd=document.getElementById('bd');
-th.oninput=()=>tv.textContent=th.value;bd.oninput=()=>bv.textContent=bd.value;
+let lineY=0.5,count=0,prev=null,prevRuns=[],active=false,lastMotion=-9999;
+const th=document.getElementById('th'),bd=document.getElementById('bd'),jd=document.getElementById('jd');
+th.oninput=()=>tv.textContent=th.value;bd.oninput=()=>bv.textContent=bd.value;jd.oninput=()=>jv.textContent=jd.value;
 document.getElementById('reset').onclick=()=>{count=0;N.textContent=0};
 function setLine(e){const r=c.getBoundingClientRect();lineY=Math.min(.95,Math.max(.05,(e.clientY-r.top)/r.height))}
 c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);setLine(e)});
@@ -66,9 +68,10 @@ function loop(){
       if(X<W&&f[X]){if(s<0)s=X;gap=0;}
       else if(s>=0){gap++;if(gap>2||X===W){runs.push([s,X-gap]);s=-1;gap=0}}
     }
-    for(const r of runs){
-      const old=prevRuns.some(p=>r[0]<=p[1]+2&&r[1]>=p[0]-2);
-      if(!old){count++;N.textContent=count;if(navigator.vibrate)navigator.vibrate(20)}
+    const now=performance.now();
+    if(runs.length){
+      if(now-lastMotion>+jd.value){count++;N.textContent=count;if(navigator.vibrate)navigator.vibrate(20)}
+      lastMotion=now;
     }
   }
   prev=g;prevRuns=runs;active=runs.length>0;
