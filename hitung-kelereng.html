@@ -23,7 +23,7 @@ p{font-size:13px;color:var(--mut)}
 <h1>Penghitung Kelereng</h1>
 <div class="cnt" id="n">0</div>
 <div class="cam"><video id="v" playsinline muted></video><canvas id="c"></canvas></div>
-<div class="row"><button id="start">Mulai kamera</button><button class="g" id="reset">Reset</button></div>
+<div class="row"><button id="start">Mulai kamera</button><button class="g" id="sw" style="display:none">Ganti kamera</button><button class="g" id="reset">Reset</button></div>
 <p id="st" style="font-weight:600;color:var(--fg)"></p>
 <label>Sensitivitas gerakan: <span id="tv">25</span></label>
 <input type="range" id="th" min="8" max="80" value="25">
@@ -37,10 +37,11 @@ const v=document.getElementById('v'),c=document.getElementById('c'),x=c.getConte
 const N=document.getElementById('n'),W=240,H=180;
 const off=document.createElement('canvas');off.width=W;off.height=H;
 const o=off.getContext('2d',{willReadFrequently:true});
-let lineY=0.5,count=0,prev=null,prevRuns=[],active=false,lastMotion=-9999;
+let lineY=0.5,count=0,prev=null,prevRuns=[],active=false,lastMotion=-9999,facing='environment',looping=false;
 const th=document.getElementById('th'),bd=document.getElementById('bd'),jd=document.getElementById('jd');
 th.oninput=()=>tv.textContent=th.value;bd.oninput=()=>bv.textContent=bd.value;jd.oninput=()=>jv.textContent=jd.value;
 document.getElementById('reset').onclick=()=>{count=0;N.textContent=0};
+document.getElementById('sw').onclick=()=>{facing=facing==='user'?'environment':'user';document.getElementById('start').onclick()};
 function setLine(e){const r=c.getBoundingClientRect();lineY=Math.min(.95,Math.max(.05,(e.clientY-r.top)/r.height))}
 c.addEventListener('pointerdown',e=>{c.setPointerCapture(e.pointerId);setLine(e)});
 c.addEventListener('pointermove',e=>{if(e.buttons)setLine(e)});
@@ -48,9 +49,11 @@ document.getElementById('start').onclick=async()=>{
   const st=document.getElementById('st');st.textContent='Tombol ditekan, meminta izin kamera...';
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){st.textContent='Halaman ini tidak boleh memakai kamera (diblokir oleh bingkai tempat halaman ditampilkan).';return}
   try{
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:640},height:{ideal:480},frameRate:{ideal:60}},audio:false});
-    v.srcObject=s;await v.play();c.width=v.videoWidth;c.height=v.videoHeight;
-    document.getElementById('start').style.display='none';requestAnimationFrame(loop);
+    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:640},height:{ideal:480},frameRate:{ideal:60}},audio:false});
+    if(v.srcObject)v.srcObject.getTracks().forEach(t=>t.stop());
+    v.srcObject=s;await v.play();c.width=v.videoWidth;c.height=v.videoHeight;prev=null;
+    document.getElementById('start').style.display='none';document.getElementById('sw').style.display='block';st.textContent='Kamera '+(facing==='user'?'depan':'belakang')+' aktif';
+    if(!looping){looping=true;requestAnimationFrame(loop)}
   }catch(e){document.getElementById('st').textContent='Kamera gagal dibuka: '+(e&&e.name?e.name:'error')+'. '+(e&&e.message?e.message:'')}
 };
 function loop(){
