@@ -49,7 +49,10 @@ document.getElementById('start').onclick=async()=>{
   const st=document.getElementById('st');st.textContent='Tombol ditekan, meminta izin kamera...';
   if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){st.textContent='Halaman ini tidak boleh memakai kamera (diblokir oleh bingkai tempat halaman ditampilkan).';return}
   try{
-    const s=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:640},height:{ideal:480},frameRate:{ideal:60}},audio:false});
+    if(v.srcObject){v.srcObject.getTracks().forEach(t=>t.stop());v.srcObject=null;await new Promise(r=>setTimeout(r,400))}
+    let s;
+    try{s=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing,width:{ideal:640},height:{ideal:480},frameRate:{ideal:60}},audio:false})}
+    catch(e1){await new Promise(r=>setTimeout(r,600));s=await navigator.mediaDevices.getUserMedia({video:{facingMode:facing},audio:false})}
     if(v.srcObject)v.srcObject.getTracks().forEach(t=>t.stop());
     v.srcObject=s;await v.play();c.width=v.videoWidth;c.height=v.videoHeight;prev=null;
     document.getElementById('start').style.display='none';document.getElementById('sw').style.display='block';st.textContent='Kamera '+(facing==='user'?'depan':'belakang')+' aktif';
